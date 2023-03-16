@@ -1,4 +1,6 @@
 *.cache/
 *.hw/
 *.sim/
-*.xpr/
+.jobs/
+*.runs/
+Mircroprocessor.xpr

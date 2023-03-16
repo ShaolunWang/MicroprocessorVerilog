@@ -59,7 +59,7 @@ module Processor(
         //I/O
         .IN_A(CurrRegA),
         .IN_B(CurrRegB),
-        .IN_OPP_TYPE(ProgMemoryOut[7:4]),
+        .ALU_Op_Code(ProgMemoryOut[7:4]),
         .OUT_RESULT(AluOut)
     );
     //The microprocessor is essentially a state machine, with one sequential pipeline
@@ -100,14 +100,37 @@ module Processor(
     //Data Manipulation
     DO_MATHS_OPP_SAVE_IN_A = 8'h30, //The result of maths op. is available, save it to Reg A.
     DO_MATHS_OPP_SAVE_IN_B = 8'h31, //The result of maths op. is available, save it to Reg B.
-    DO_MATHS_OPP_0 = 8'h32; //wait for new op address to settle. end op.
+    DO_MATHS_OPP_0 = 8'h32, //wait for new op address to settle. end op.
     /*
     Complete the above parameter list for In/Equality, Goto Address, Goto Idle, function start, Return from
     function, and Dereference operations.
     */
-//    ....................
-//    FILL IN THIS AREA
-//    ...................
+
+   //NOTE: Implementation
+   // Names here follows the ones given in the FSM states.
+	IF_A_EQUALITY_B_GOTO = 8'h40,
+	IF_A_EQUALITY_B_GOTO_0 = 8'h40,
+    BRANCH_COMPARISION_INEQ = 8'h41,
+    BRANCH_COMPARISION_GT = 8'h42,
+    BRANCH_COMPARISION_LT = 8'h43,
+
+    GOTO = 8'h50,
+    GOTO_IDLE = 8'h51,
+	GOTO_J = 8'h52,
+	GOTO_0 = 8'h52,
+
+
+    FUNCTION_START    = 8'h60,
+    RETURN = 8'h61,
+
+	DE_REFERENCE_A = 8'h70,
+	DE_REFERENCE_B = 9'h71,
+	
+    DEREFERENCE      = 8'h72;
+
+ 
+   //NOTE: Implementation fin
+
     //Sequential part of the State Machine.
     reg [7:0] CurrState, NextState;
     always@(posedge CLK) begin
@@ -138,7 +161,7 @@ module Processor(
             CurrInterruptAck = NextInterruptAck;
         end
     end
-    //Combinatorial section �? large!
+    //Combinatorial section ????? large!
     always@* begin
     //Generic assignment to reduce the complexity of the rest of the S/M
         NextState = CurrState;
@@ -294,21 +317,61 @@ module Processor(
             Complete the above case statement for In/Equality, Goto Address, Goto Idle, function start, Return from
             function, and Dereference operations.
             */
-            
-            //TODO: GE
-            //TODO: GT
-            //TODO: Goto
-            //TODO: Goto_Idle
-            //TODO: Func_start
-            //TODO: RET
-            //TODO: Deref A
-            //TODO: Deref B
+            // Branch if ALU gives True :
+			// With this we can handle all equality and inequalities
+			// Since ALU would take care of everything
+            IF_A_EQUALITY_B_GOTO : begin
+				if(AluOut) begin
+					NextProgCounter = CurrProgCounter + 1;
+					NextState = GOTO;
+				end
+				else begin 
+					NextProgCounter = CurrProgCounter + 2;
+					NextState = IF_A_EQUALITY_B_GOTO_0;
+				end
+			end
+			// wait state for new prog address to settle.
+			IF_A_EQUALITY_B_GOTO_0: NextState = CHOOSE_OPP;
 
-            // IR reads & exec if :
-            //     Bus Addr: 0x90
-            //     Bus data: 1 byte ([3:0])
-            // then
-            //    exec IR
+			//GOTO
+		    GOTO :
+				NextState = GOTO_J;
+			// With this we can handle the IDLE state by just checking
+			// ProgMemoryOut.
+			GOTO_J : begin
+				NextProgCounter = ProgMemoryOut[7:0];
+				NextState = GOTO_0;
+			end
+			GOTO_0 : NextState = CHOOSE_OPP;
+				
+
+			// Using NextProgContext to store the pc state
+			FUNCTION_START : begin
+				NextProgCounter = CurrProgCounter + 1;
+				NextProgContext = CurrProgCounter + 2;
+				NextState = GOTO;
+			end
+
+			RETURN : begin
+				NextProgCounter = CurrProgContext; // using the context stored beforehand to jump
+				NextState = CHOOSE_OPP;
+			end
+			
+			DE_REFERENCE_A : begin
+				NextState = DEREFERENCE;
+				NextBusAddr = CurrRegA;
+				NextRegSelect = 1'b0;
+			end
+			DE_REFERENCE_B : begin
+				NextState = DEREFERENCE;
+				NextBusAddr = CurrRegB;
+				NextRegSelect = 1'b1;
+			end
+			DEREFERENCE: begin
+				NextProgCounter = CurrProgCounter + 1;
+				NextState = READ_FROM_MEM_2;
+			end
+
 
         endcase
     end
