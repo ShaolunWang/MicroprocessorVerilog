@@ -1,222 +1,54 @@
 `timescale 1ns / 1ps
 
-module IRTransmitterSM(
-    input CLK,
-    input RESET,
-    input [3:0] Command,
-    input [7:0] StartBurstSize,
-    input [5:0] CarSelectBurstSize,
-    input [5:0] GapSize,
-    input [5:0] AssertBurstSize,
-    input [4:0] DeAssertBurstSize,
-    input FrequencyTrigger,
-    input FrequencyPulse,
-    output IRLed
+module Generic_counter(
+    CLK,
+    RESET,
+    ENABLE,
+    TRIG_OUT,
+    COUNT
     );
     
-    // Generic counter moudule to output a trigger 10 times/s
-    Generic_counter # (.COUNTER_WIDTH(24),
-                       .COUNTER_MAX(10000000) // 10Hz
-                       )
-                       Counter_10Hz(
-                       .CLK(CLK),
-                       .RESET(RESET),
-                       .ENABLE(1'b1),
-                       .TRIG_OUT(TRIGGER_10Hz)
-                           );
     
-    reg [2:0] CURR_STATE;
-    reg [2:0] NEXT_STATE;
-    reg [8:0] COUNT = 0;
-    reg PACKET_OUT;
-    reg ENABLE = 0;
-    always @ (posedge FrequencyTrigger, posedge TRIGGER_10Hz) begin
-        if (RESET) begin
-            CURR_STATE <= 3'd0;
-        end
-    end
+    parameter COUNTER_WIDTH = 4;
+    parameter COUNTER_MAX = 9;
     
-    // State machine that waits for the trigger from 10Hz to generic counter module and starts transmitting the pulse sequence            
-    always @ (posedge FrequencyTrigger, posedge TRIGGER_10Hz) begin
-        if(TRIGGER_10Hz)
-            ENABLE <= 1;
-        else if (ENABLE) begin
-            case (CURR_STATE)
-                3'd0: begin // Generates Start pulses + gap
-                    if (COUNT < StartBurstSize*2) begin
-                        PACKET_OUT <= FrequencyPulse;
-                        COUNT <= COUNT + 1;
-                    end
-                    else if (COUNT >= StartBurstSize*2 & COUNT < (StartBurstSize*2 + GapSize*2)) begin
-                        PACKET_OUT <= 0;
-                        COUNT <= COUNT + 1;
-                    end
-                    else begin
-                        COUNT <= 0;
-                        PACKET_OUT <= 0;
-                        NEXT_STATE <= 3'd1;
-                    end
-                end
-                
-                3'd1: begin // Generates Car select pulses + gap
-                    if (COUNT < CarSelectBurstSize*2) begin
-                        PACKET_OUT <= FrequencyPulse;
-                        COUNT <= COUNT + 1;
-                    end
-                    else if (COUNT >= CarSelectBurstSize*2 & COUNT < (CarSelectBurstSize*2 + GapSize*2)) begin
-                        PACKET_OUT <= 0;
-                        COUNT <= COUNT + 1;
-                    end
-                    else begin
-                        COUNT <= 0;
-                        PACKET_OUT <= 0;
-                        NEXT_STATE <= 3'd2;
-                    end
-                end
-                
-                3'd2: begin // Generates Right pulses + gap
-                    if (Command[3]) begin // If right command is given
-                        if (COUNT < AssertBurstSize*2) begin
-                            PACKET_OUT <= FrequencyPulse;
-                            COUNT <= COUNT + 1;
-                        end
-                        else if (COUNT >= AssertBurstSize*2 & COUNT < (AssertBurstSize*2 + GapSize*2)) begin
-                            PACKET_OUT <= 0;
-                            COUNT <= COUNT + 1;
-                        end
-                        else begin
-                            COUNT <= 0;
-                            NEXT_STATE <= 3'd3;
-                        end
-                    end
-                    else begin // If right command is not given
-                        if (COUNT < DeAssertBurstSize*2) begin
-                            PACKET_OUT <= FrequencyPulse;
-                            COUNT <= COUNT + 1;
-                        end
-                        else if (COUNT >= DeAssertBurstSize*2 & COUNT < (DeAssertBurstSize*2 + GapSize*2)) begin
-                            PACKET_OUT <= 0;
-                            COUNT <= COUNT + 1;
-                        end
-                        else begin
-                            COUNT <= 0;
-                            PACKET_OUT <= 0;
-                            NEXT_STATE <= 3'd3;
-                        end
-                    end
-                end
-                
-                3'd3: begin // Generates left pulses + gap
-                    if (Command[2]) begin // If left command is given
-                        if (COUNT < AssertBurstSize*2) begin
-                            PACKET_OUT <= FrequencyPulse;
-                            COUNT <= COUNT + 1;
-                        end
-                        else if (COUNT >= AssertBurstSize*2 & COUNT < (AssertBurstSize*2 + GapSize*2)) begin
-                            PACKET_OUT <= 0;
-                            COUNT <= COUNT + 1;
-                        end
-                        else begin
-                            COUNT <= 0;
-                            NEXT_STATE <= 3'd4;
-                        end
-                    end
-                    else begin // If left command is not given
-                        if (COUNT < DeAssertBurstSize*2) begin
-                            PACKET_OUT <= FrequencyPulse;
-                            COUNT <= COUNT + 1;
-                        end
-                        else if (COUNT >= DeAssertBurstSize*2 & COUNT < (DeAssertBurstSize*2 + GapSize*2)) begin
-                            PACKET_OUT <= 0;
-                            COUNT <= COUNT + 1;
-                        end
-                        else begin
-                            COUNT <= 0;
-                            PACKET_OUT <= 0;
-                            NEXT_STATE <= 3'd4;
-                        end
-                    end
-                end
-                
-                3'd4: begin // Generates backward pulses + gap
-                    if (Command[1]) begin // If Backwards command is given
-                        if (COUNT < AssertBurstSize*2) begin
-                            PACKET_OUT <= FrequencyPulse;
-                            COUNT <= COUNT + 1;
-                        end
-                        else if (COUNT >= AssertBurstSize*2 & COUNT < (AssertBurstSize*2 + GapSize*2)) begin
-                            PACKET_OUT <= 0;
-                            COUNT <= COUNT + 1;
-                        end
-                        else begin
-                            COUNT <= 0;
-                            PACKET_OUT <= 0;
-                            NEXT_STATE <= 3'd5;
-                        end
-                    end
-                    else begin // If Backwards command is not given
-                        if (COUNT < DeAssertBurstSize*2) begin
-                            PACKET_OUT <= FrequencyPulse;
-                            COUNT <= COUNT + 1;
-                        end
-                        else if (COUNT >= DeAssertBurstSize*2 & COUNT < (DeAssertBurstSize*2 + GapSize*2)) begin
-                            PACKET_OUT <= 0;
-                            COUNT <= COUNT + 1;
-                        end
-                        else begin
-                            COUNT <= 0;
-                            PACKET_OUT <= 0;
-                            NEXT_STATE <= 3'd5;
-                        end
-                    end
-                end
-                
-                3'd5: begin // Generates forward pulses + gap
-                    if (Command[0]) begin // If Forward command is given
-                        if (COUNT < AssertBurstSize*2) begin
-                            PACKET_OUT <= FrequencyPulse;
-                            COUNT <= COUNT + 1;
-                        end
-                        else if (COUNT >= AssertBurstSize*2 & COUNT < (AssertBurstSize*2 + GapSize*2)) begin
-                            PACKET_OUT <= 0;
-                            COUNT <= COUNT + 1;
-                        end
-                        else begin
-                            COUNT <= 0;
-                            PACKET_OUT <= 0;
-                            NEXT_STATE <= 3'd0;
-                        end
-                    end
-                    else begin // If forward command is not given
-                        if (COUNT < DeAssertBurstSize*2) begin
-                            PACKET_OUT <= FrequencyPulse;
-                            COUNT <= COUNT + 1;
-                        end
-                        else if (COUNT >= DeAssertBurstSize*2 & COUNT < (DeAssertBurstSize*2 + GapSize*2)) begin
-                            PACKET_OUT <= 0;
-                            COUNT <= COUNT + 1;
-                        end
-                        else begin
-                            COUNT <= 0;
-                            PACKET_OUT <= 0;
-                            ENABLE <= 0;
-                            NEXT_STATE <= 3'd0;
-                        end
-                    end
-                end
-                
-                default: begin
-                    PACKET_OUT <= 0;
-                    NEXT_STATE <= 3'd0;
-                end
-            endcase
-        end
-            
-        CURR_STATE <= NEXT_STATE;
-        
-    end
-   
-    assign IRLed = PACKET_OUT;
-
+    input CLK;
+    input RESET;
+    input ENABLE;
+    output TRIG_OUT;
+    output [COUNTER_WIDTH-1:0] COUNT;
     
+    reg [COUNTER_WIDTH-1:0] count_value = 0;
+    reg Trigger_out;
+    
+    // Counter counts up to the given specific value incrementing at the speed of internal clock (100MHz for Basys 3 board).
+    // Once it reaches given count value it gives out a trigger impulse
+    // This allows to create lower frequency clocks than the internal one
+    always@(posedge CLK) begin
+        if (RESET)
+            count_value <= 0;
+        else begin
+            if(ENABLE) begin
+                if(count_value==COUNTER_MAX)
+                    count_value <= 0;
+                else
+                    count_value <= count_value + 1;
+             end
+          end
+      end
+      
+      always@(posedge CLK) begin
+           if(RESET)
+               Trigger_out <= 0;
+           else begin
+                if (ENABLE && (count_value == COUNTER_MAX))
+                    Trigger_out <= 1;
+                else 
+                    Trigger_out <= 0;
+           end
+      end
+      
+      assign COUNT = count_value;
+      assign TRIG_OUT = Trigger_out;
+      
 endmodule

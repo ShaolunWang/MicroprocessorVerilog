@@ -294,6 +294,22 @@ module Processor(
             Complete the above case statement for In/Equality, Goto Address, Goto Idle, function start, Return from
             function, and Dereference operations.
             */
+            
+            //TODO: GE
+            //TODO: GT
+            //TODO: Goto
+            //TODO: Goto_Idle
+            //TODO: Func_start
+            //TODO: RET
+            //TODO: Deref A
+            //TODO: Deref B
+
+            // IR reads & exec if :
+            //     Bus Addr: 0x90
+            //     Bus data: 1 byte ([3:0])
+            // then
+            //    exec IR
+
         endcase
     end
 endmodule
