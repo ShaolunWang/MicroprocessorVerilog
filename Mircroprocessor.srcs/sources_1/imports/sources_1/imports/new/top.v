@@ -3,50 +3,74 @@
 module top(
     input CLK,
     input RESET,
-    input [3:0] Command,
-    input [1:0] CarSelectIn,
+    input [1:0] CAR_SELECT_IN,
     output IR_LED
+);
+    
+    wire [7:0] Bus_Data;
+    wire [7:0] Bus_Addr;
+    wire Bus_WE;
+    wire [7:0] Rom_Address;
+    wire [7:0] Rom_Data;
+    wire [1:0] Bus_Interrupts_Rise;
+    wire [1:0] Bus_Interrupts_Ack;
+    wire GENERATED_PACKET;
+
+    
+    Processor Processor_1(
+        //Standard Signals
+        .CLK(CLK),
+        .RESET(RESET),
+        //BUS Signals
+        .BUS_DATA(Bus_Data),
+        .BUS_ADDR(Bus_Addr),
+        .BUS_WE(Bus_WE),
+        // ROM signals
+        .ROM_ADDRESS(Rom_Address),
+        .ROM_DATA(Rom_Data),
+        // INTERRUPT signals
+        .BUS_INTERRUPTS_RAISE(Bus_Interrupts_Rise),
+        .BUS_INTERRUPTS_ACK(Bus_Interrupts_Ack)
+    );
+     
+     
+    ROM ROM_1(
+        //standard signals
+        .CLK(CLK),
+        //BUS signals
+        .DATA(Rom_Data),
+        .ADDR(Rom_Address)
     );
     
-    wire [7:0] START_BURST_SIZE;
-    wire [5:0] CAR_SELECT_BURST_SIZE;
-    wire [5:0] GAP_SIZE;
-    wire [5:0] ASSERT_BURST_SIZE;
-    wire [4:0] DE_ASSERT_BURST_SIZE;
-    wire FREQUENCY_TRIGGER;
-    wire FREQUENCY_PULSE;
-    wire GENERATED_PACKET;
-    wire [1:0] SELECTED_CAR;
-    wire [3:0] ACTIVE_ANODE;
-    wire [6:0] SEGMENT_DISPLAY_OUT;
+    RAM RAM_1(
+        //standard signals
+        .CLK(CLK),
+        //BUS signals
+        .BUS_DATA(Bus_Data),
+        .BUS_ADDR(Bus_Addr),
+        .BUS_WE(Bus_WE)
+    );
     
-    CarParameterSelector # ()
-        CarSelector (.CLK(CLK),
-            .CarSelectIn(CarSelectIn),
-            .StartBurstSize(START_BURST_SIZE),
-            .CarSelectBurstSize(CAR_SELECT_BURST_SIZE),
-            .GapSize(GAP_SIZE),
-            .AssertBurstSize(ASSERT_BURST_SIZE),
-            .DeAssertBurstSize(DE_ASSERT_BURST_SIZE),
-            .FrequencyTrigger(FREQUENCY_TRIGGER),
-            .FrequencyPulse(FREQUENCY_PULSE),
-            .SelectedCar(SELECTED_CAR)
-            );
-            
-    IRTransmitterSM # ()
-        IRTransmitterSM (.CLK(CLK),
-        .Command(Command),
+    Timer # (.InitialIterruptRate(100))  Timer_1(
+        //standard signals
+        .CLK(CLK),
         .RESET(RESET),
-        .StartBurstSize(START_BURST_SIZE),
-        .CarSelectBurstSize(CAR_SELECT_BURST_SIZE),
-        .GapSize(GAP_SIZE),
-        .AssertBurstSize(ASSERT_BURST_SIZE),
-        .DeAssertBurstSize(DE_ASSERT_BURST_SIZE),
-        .FrequencyTrigger(FREQUENCY_TRIGGER),
-        .FrequencyPulse(FREQUENCY_PULSE),
-        .IRLed(GENERATED_PACKET)
-        );
-        
+        //BUS signals
+        .BUS_DATA(Bus_Data),
+        .BUS_ADDR(Bus_Addr),
+        .BUS_WE(Bus_WE),
+        .BUS_INTERRUPT_RAISE(Bus_Interrupts_Rise[1]),
+        .BUS_INTERRUPT_ACK(Bus_Interrupts_Ack[1])
+    );
     
+    IR_top IR_top_1(
+        .CLK(CLK),
+        .RESET(RESET),
+        .BUS_ADDR(Bus_Addr),
+        .BUS_DATA(Bus_Data),
+        .CarSelectIn(CAR_SELECT_IN),
+        .IR_LED(GENERATED_PACKET)
+    );
     assign IR_LED = GENERATED_PACKET;    
+
 endmodule

@@ -1,25 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: The University of Edinburgh
-// Engineer: Juozas Pazera s1554371
-// 
-// Create Date: 22.01.2019 10:14:36
-// Design Name: 
-// Module Name: IRTransmitterSM
-// Project Name: IR_interface
-// Target Devices: Digilent Basys 3 Board
-// Tool Versions: 
-// Description: This module takes car parameters as an input and outputs the right pulse sequence.
-//              Pulses in sequence are at car operating frequency and are transmitted 10 times/s.
-// 
-// Dependencies: Generic_counter module
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
-
 
 module IRTransmitterSM(
     input CLK,

@@ -1,23 +1,4 @@
 `timescale 1ns / 1ps
-//////////////////////////////////////////////////////////////////////////////////
-// Company: The University of Edinburgh
-// Engineer: Juozas Pazera s1554371
-// 
-// Create Date: 28.10.2017 15:10:26
-// Design Name: 
-// Module Name: Generic_counter
-// Project Name: 
-// Target Devices: Digilent Basys 3 Board
-// Tool Versions: 
-// Description: This is a generic counter module used to generate different frequency impulses from 100 MHz internal clock
-// 
-// Dependencies: 
-// 
-// Revision:
-// Revision 0.01 - File Created
-// Additional Comments:
-// 
-//////////////////////////////////////////////////////////////////////////////////
 
 
 module Generic_counter(
